@@ -68,17 +68,37 @@ function getNewToken(oAuth2Client, callback) {
   });
 }
 
+const formatFootnote = (footnoteId, footnotes) => {
+  // REVIEW: Can we refactor this?
+  const textArray = footnotes[footnoteId].content.map(chunk => {
+    if (!chunk.paragraph) return null;
+    return chunk.paragraph.elements.map(element => {
+      if (element.textRun) return element.textRun.content.trim();
+      if (element.footnoteReference) return formatFootnote(element.footnoteReference, data.footnotes);      
+      return null;
+    })
+  })
+  const textString = textArray.join(' ');
+  textString.replace(/ +/gm, ' ');
+  return `[${textString}]`;
+}
+
 const formatBody = data => {
   const textArray = data.body.content.map(chunk => {
     if (!chunk.paragraph) return null;
+    if (chunk.paragraph.paragraphStyle.namedStyleType === 'HEADING_5') {
+      const headingText = chunk.paragraph.elements[0].textRun.content.trim();
+      return `\{\{${headingText}\}\}`.replace(/\{\{\{\{/, '{{').replace(/\}\}\}\}/, '}}');
+    }
     return chunk.paragraph.elements.map(element => {
-      if (!element.textRun) return null;
-      return element.textRun.content;
-    })
-  })
-  const textString = textArray.join('\n');
-  textString.replace(/\n\n\n/gm, '\n\n\n').replace(/ +/gm, ' ');
-  return textString;
+      if (element.textRun) return element.textRun.content.trim();
+      if (element.footnoteReference) return formatFootnote(element.footnoteReference.footnoteId, data.footnotes);      
+      return null;
+    }).join(' ');
+  });
+  const textString = textArray.join('\n\n');
+  textString.replace(/\n\n\n+/gm, '\n\n').replace(/ +/gm, ' ');
+  return textString.replace(/\n\n\n\n\{\{/gm, '\n\n\n{{').replace(/\}\}\n\n/gm, '}}\n');
 }
 
 /**
@@ -94,10 +114,9 @@ function printDocTitle(auth) {
     if (err) return console.log('The API returned an error: ' + err);
     console.log(`The title of the document is: ${res.data.title}`);
     const bodyText = formatBody(res.data);
-    console.log(bodyText);
-    fs.writeFile('content.json', bodyText, (err) => {
+    fs.writeFile('content.txt', bodyText, (err) => {
         if (err) return console.error(err);
-        console.log('Content stored to content.json');
+        console.log('Content stored to content.txt');
       });
     });
 }

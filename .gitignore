@@ -61,3 +61,4 @@ typings/
 dist
 *credentials.json
 *token.json
+content.*
