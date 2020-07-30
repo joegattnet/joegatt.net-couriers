@@ -1,4 +1,4 @@
-# joegatt.net-gardeners
+# joegatt.net-couriers
 
 Grooming daemons for joegatt.net
 
@@ -9,15 +9,6 @@ Grooming daemons for joegatt.net
 
 # To do
 
-- Use github projects for this list
-- Genericise parse to include sanitise
-- Make all current tests work
-- Make sure citations.js is easy to understand
-- Simplify components
-- Create tasks folder
-- Call tasks from route
-- Make db tests with mocks
-- Make integration tests
-- Build postgres triggers
-- Finalise tresholds and breakage when committing/pushing
-- Finalise dx
+- Use github projects for this list?
+- Remove superfluous files, keep structure
+
