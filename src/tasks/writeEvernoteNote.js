@@ -1,6 +1,6 @@
 // https://gist.github.com/evernotegists
-
 // https://dev.evernote.com/doc/articles/creating_notes.php
+// https://github.com/evernote/evernote-sdk-js
 
 var Evernote = require('evernote');
 
@@ -31,3 +31,7 @@ function makeNote(noteStore, noteTitle, noteBody, parentNotebook) {
       console.log(err);
     });
 }
+
+// var client = new Evernote.Client(token: token);
+var client = new Evernote.Client({token});
+var noteStore = client.getNoteStore();

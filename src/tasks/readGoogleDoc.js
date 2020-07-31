@@ -1,3 +1,5 @@
+// https://slack.dev/node-slack-sdk/web-api
+
 const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
@@ -134,7 +136,7 @@ const chapters = [
 function printDocTitle(auth) {
   const docs = google.docs({version: 'v1', auth});
   docs.documents.get({
-    documentId: chapters[4].googleDocumentId,
+    documentId: chapters[5].googleDocumentId,
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     console.log(`The title of the document is: ${res.data.title}`);

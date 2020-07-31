@@ -17,6 +17,7 @@
     "@types/htmlparser2": "^3.10.1",
     "@types/sanitize-html": "^1.23.2",
     "chalk": "^4.0.0",
+    "evernote": "^2.0.5",
     "googleapis": "^39.2.0",
     "htmlparser2": "^4.1.0",
     "hyphen": "^1.6.2",

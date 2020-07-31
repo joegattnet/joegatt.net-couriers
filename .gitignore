@@ -59,6 +59,7 @@ typings/
 
 # etc
 dist
+*secret*
 *credentials.json
 *token.json
 content.*
