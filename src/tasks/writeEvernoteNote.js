@@ -3,14 +3,18 @@
 // https://github.com/evernote/evernote-sdk-js
 
 var Evernote = require('evernote');
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
-function makeNote(noteStore, noteTitle, noteBody, parentNotebook) {
+function updateNote(noteStore, guid, noteTitle, noteBody, parentNotebook) {
   var nBody = '<?xml version="1.0" encoding="UTF-8"?>';
   nBody += '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">';
   nBody += "<en-note>" + noteBody + "</en-note>";
  
   // Create note object
   var ourNote = new Evernote.Types.Note();
+  ourNote.guid = guid;
   ourNote.title = noteTitle;
   ourNote.content = nBody;
  
@@ -20,7 +24,7 @@ function makeNote(noteStore, noteTitle, noteBody, parentNotebook) {
   }
  
   // Attempt to create note in Evernote account (returns a Promise)
-  noteStore.createNote(ourNote)
+  noteStore.updateNote(ourNote)
     .then(function(note) {
       // Do something with `note`
       console.log(note);
@@ -33,5 +37,14 @@ function makeNote(noteStore, noteTitle, noteBody, parentNotebook) {
 }
 
 // var client = new Evernote.Client(token: token);
-var client = new Evernote.Client({token});
+// If we didn't have token we would have to fetch it now
+const TOKEN = process.env.EVERNOTE_TOKEN;
+var client = new Evernote.Client({
+  token: TOKEN,
+  sandbox: false,
+  china: false
+});
 var noteStore = client.getNoteStore();
+
+// POC
+updateNote(noteStore, '4d6bf3b8-0c94-44f1-a1fb-c0e37faf4213', 'JG Bizlejn dik', `<p>rajtha \'l badiddina? <strong>${process.argv[2]}</strong>?</p>`);

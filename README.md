@@ -1,6 +1,6 @@
 # joegatt.net-couriers
 
-Grooming daemons for joegatt.net
+Various services to import/export notes
 
 # References
 

@@ -1,7 +1,7 @@
 {
   "name": "joegatt.net-couriers",
   "version": "1.0.0",
-  "description": "Various services to gimport/export notes",
+  "description": "Various services to import/export notes",
   "scripts": {
     "lint": "eslint .",
     "prepush": "npm run lint && npm test",
@@ -38,6 +38,7 @@
     "@types/pg": "^7.14.3",
     "@typescript-eslint/eslint-plugin": "^3.1.0",
     "@typescript-eslint/parser": "^3.1.0",
+    "dotenv": "^8.2.0",
     "eslint": "^7.1.0",
     "eslint-config-airbnb-base": "^14.1.0",
     "eslint-config-prettier": "^6.11.0",

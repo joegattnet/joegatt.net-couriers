@@ -5,6 +5,10 @@ const readline = require('readline');
 const {google} = require('googleapis');
 const path = require('path');
 
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
 // The file token.json stores the user's access and refresh tokens, and is
@@ -81,7 +85,7 @@ const formatFootnote = (footnoteId, footnotes) => {
       if (element.textRun) return element.textRun.content.trim();
       if (element.footnoteReference) return formatFootnote(element.footnoteReference, data.footnotes);      
       return null;
-    }).join('');
+    }).join(' ');
   });
   const textString = textArray.join('');
   textString.replace(/ +/gm, ' ');
@@ -92,10 +96,14 @@ const formatBody = data => {
   const textArray = data.body.content.map(chunk => {
     if (!chunk.paragraph) return null;
     if (chunk.paragraph.paragraphStyle.namedStyleType === 'TITLE') return null;
+    if (chunk.paragraph.paragraphStyle.namedStyleType === 'HEADING_4') {
+      const headingText = chunk.paragraph.elements[0].textRun.content.trim();
+      return ['',`<strong>${headingText}</strong>`.replace(/\{\{\{\{/, '{{').replace(/\}\}\}\}/, '}}')];
+    }
     if (chunk.paragraph.paragraphStyle.namedStyleType === 'HEADING_5') {
       const headingText = chunk.paragraph.elements[0].textRun.content.trim();
       if (headingText === '--30--' || headingText === '-30-') return headingText;
-      return `\{\{${headingText}\}\}`.replace(/\{\{\{\{/, '{{').replace(/\}\}\}\}/, '}}');
+      return [' ',`{\{${headingText}\}\}`.replace(/\{\{\{\{/, '{{').replace(/\}\}\}\}/, '}}')];
     }
     return chunk.paragraph.elements.map(element => {
       if (element.textRun && element.textRun.textStyle.link) {
@@ -106,24 +114,28 @@ const formatBody = data => {
       return null;
     }).join(' ');
   });
-  const textString = textArray.join('\n\n');
-  textString.replace(/\n\n\n+/gm, '\n\n').replace(/ +/gm, ' ');
-  return textString.replace(/\n\n\n\n\{\{/gm, '\n\n\n{{').replace(/\}\}\n\n/gm, '}}\n').trim();
+  const textString = textArray.flat().filter(Boolean).map(line => line && `<p>${line.replace(/\&/gm, '&amp;').replace(/\n\n\n+/gm, '\n\n').replace(/ +/gm, ' ')}</p>\n`).join('\n').trim();
+  // textString.replace(/\n\n\n+/gm, '\n\n').replace(/ +/gm, ' ');
+  // return textString.replace(/\n\n\n\n\{\{/gm, '\n\n\n{{').replace(/\}\}\n\n/gm, '}}\n').split('\n');
+  return textString;
 }
 
 const chapters = [
   {
-    name: 'Sample',
-    googleDocumentId: '1mhAQIzBflcx_jxIejYOrfWWgEnjCD6Kpa9eTxFTFdF0'
+    name: 'Example',
+    googleDocumentId: '1mhAQIzBflcx_jxIejYOrfWWgEnjCD6Kpa9eTxFTFdF0',
+    evernoteId: '4d6bf3b8-0c94-44f1-a1fb-c0e37faf4213'
   },
   {}, {}, {},
   {
     name: 'Chapter 4',
-    googleDocumentId: '13LhjdMQiQvQJfqy9EhcIICp5Zmp06hnjqRoDCC1shNI'
+    googleDocumentId: '13LhjdMQiQvQJfqy9EhcIICp5Zmp06hnjqRoDCC1shNI',
+    evernoteId: ''
   },
   {
     name: 'Chapter 5',
-    googleDocumentId: '1BsLoH3GnAWUMss04IcTxPQZkbv0suV3zuYg5r7ZHXgY'
+    googleDocumentId: '1BsLoH3GnAWUMss04IcTxPQZkbv0suV3zuYg5r7ZHXgY',
+    evernoteId: ''
   }
 ];
 
@@ -133,23 +145,64 @@ const chapters = [
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth 2.0 client.
  */
 
-function printDocTitle(auth) {
+/******************************************************************************
+                                  EVERNOTE
+ ******************************************************************************/
+
+  var Evernote = require('evernote');
+
+  function updateNote(noteStore, guid, noteTitle, noteBody, parentNotebook) {
+    var nBody = '<?xml version="1.0" encoding="UTF-8"?>';
+    nBody += '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">';
+    nBody += "<en-note>" + noteBody + "</en-note>";
+   
+    // Create note object
+    var ourNote = new Evernote.Types.Note();
+    ourNote.guid = guid;
+    ourNote.title = noteTitle;
+    ourNote.content = nBody;
+   
+    // parentNotebook is optional; if omitted, default notebook is used
+    if (parentNotebook && parentNotebook.guid) {
+      ourNote.notebookGuid = parentNotebook.guid;
+    }
+   
+    // Attempt to create note in Evernote account (returns a Promise)
+    noteStore.updateNote(ourNote)
+      .then(function(note) {
+        // Do something with `note`
+        console.log(note);
+      }).catch(function (err) {
+        // Something was wrong with the note data
+        // See EDAMErrorCode enumeration for error code explanation
+        // http://dev.evernote.com/documentation/reference/Errors.html#Enum_EDAMErrorCode
+        console.log(err);
+      });
+  }
+
+  // var client = new Evernote.Client(token: token);
+  // If we didn't have token we would have to fetch it now
+  const TOKEN = process.env.EVERNOTE_TOKEN;
+  var client = new Evernote.Client({
+    token: TOKEN,
+    sandbox: false,
+    china: false
+  });
+  var noteStore = client.getNoteStore();
+
+
+ /*****************************************************************************/
+
+ function printDocTitle(auth) {
   const docs = google.docs({version: 'v1', auth});
+  const text = chapters[parseInt(process.argv[2], 10)];
   docs.documents.get({
-    documentId: chapters[5].googleDocumentId,
+    documentId: text.googleDocumentId,
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     console.log(`The title of the document is: ${res.data.title}`);
     const bodyText = formatBody(res.data);
 
-    fs.writeFile('content.json', JSON.stringify(res.data), (err) => {
-      if (err) return console.error(err);
-      console.log('Content stored to content.json');
-    });
-
-    fs.writeFile('content.txt', bodyText, (err) => {
-        if (err) return console.error(err);
-        console.log('Content stored to content.txt');
-      });
-    });
+    updateNote(noteStore, text.evernoteId, res.data.title, bodyText);
+  });
 }
