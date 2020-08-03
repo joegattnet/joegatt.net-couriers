@@ -62,4 +62,4 @@ dist
 *secret*
 *credentials.json
 *token.json
-content.*
+content*

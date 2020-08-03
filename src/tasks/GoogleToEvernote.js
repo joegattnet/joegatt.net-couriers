@@ -4,9 +4,13 @@ const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
 const path = require('path');
+const parameterize = require('parameterize');
 
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
+  if (!process.env.EVERNOTE_TOKEN) {
+    console.error('Evernote token missing! Get one from https://dev.evernote.com/get-token/');
+  }
 }
 
 // If modifying these scopes, delete token.json.
@@ -14,7 +18,7 @@ const SCOPES = ['https://www.googleapis.com/auth/documents.readonly'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const CREDENTIALS_PATH = path.resolve(__dirname, '../../googledocs.credentials.json'); 
+const CREDENTIALS_PATH = path.resolve(__dirname, '../../googledocs.credentials.json');
 const TOKEN_PATH = path.resolve(__dirname, '../../googledocs.token.json');
 
 // Load client secrets from a local file.
@@ -130,13 +134,14 @@ const chapters = [
   {
     name: 'Chapter 4',
     googleDocumentId: '13LhjdMQiQvQJfqy9EhcIICp5Zmp06hnjqRoDCC1shNI',
-    evernoteId: ''
+    evernoteId: '3c596fe9-d166-4c69-bc9a-ca5ec1cb9888'
   },
   {
     name: 'Chapter 5',
     googleDocumentId: '1BsLoH3GnAWUMss04IcTxPQZkbv0suV3zuYg5r7ZHXgY',
-    evernoteId: ''
-  }
+    evernoteId: 'c967e410-ebdb-4de8-aade-9f7b683e83e7'
+  },
+  { name: 'Chapter 6', googleDocumentId:'', evernoteId: '0a56703b-f884-4a13-901d-a4cb81d55c90' }
 ];
 
 /**
@@ -202,6 +207,13 @@ const chapters = [
     if (err) return console.log('The API returned an error: ' + err);
     console.log(`The title of the document is: ${res.data.title}`);
     const bodyText = formatBody(res.data);
+
+    const fileName = `${parameterize(res.data.title)}|${text.evernoteId}|${Date.now()}.txt`;
+    const filePath = path.resolve(__dirname, `../../content/${fileName}`);  
+    fs.writeFile(filePath, bodyText, (err) => {
+      if (err) return console.error(err);
+      console.log(`Content stored to ${fileName}`);
+    });
 
     updateNote(noteStore, text.evernoteId, res.data.title, bodyText);
   });
