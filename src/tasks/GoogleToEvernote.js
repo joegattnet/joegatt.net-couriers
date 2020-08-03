@@ -25,7 +25,7 @@ const TOKEN_PATH = path.resolve(__dirname, '../../googledocs.token.json');
 fs.readFile(CREDENTIALS_PATH, (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Docs API.
-  authorize(JSON.parse(content), printDocTitle);
+  authorize(JSON.parse(content), googleToEvernote);
 });
 
 /**
@@ -156,7 +156,7 @@ const chapters = [
 
   var Evernote = require('evernote');
 
-  function updateNote(noteStore, guid, noteTitle, noteBody, parentNotebook) {
+  function updateEvernoteNote(noteStore, guid, noteTitle, noteBody, parentNotebook) {
     var nBody = '<?xml version="1.0" encoding="UTF-8"?>';
     nBody += '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">';
     nBody += "<en-note>" + noteBody + "</en-note>";
@@ -198,7 +198,7 @@ const chapters = [
 
  /*****************************************************************************/
 
- function printDocTitle(auth) {
+ function googleToEvernote(auth) {
   const docs = google.docs({version: 'v1', auth});
   const text = chapters[parseInt(process.argv[2], 10)];
   docs.documents.get({
@@ -215,6 +215,6 @@ const chapters = [
       console.log(`Content stored to ${fileName}`);
     });
 
-    updateNote(noteStore, text.evernoteId, res.data.title, bodyText);
+    updateEvernoteNote(noteStore, text.evernoteId, res.data.title, bodyText);
   });
 }

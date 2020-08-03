@@ -19,15 +19,14 @@ const tidyHtml = require("../components/tidyHtml");
 const client = new Client(config.DB_CONNECTION);
 client.connect();
 
-const selectCitationsSql = `
+const selectEvernoteNoteSql = `
   SELECT *
-  FROM notes
-  WHERE content_type = 1
-  ORDER BY groomed_at
-  LIMIT 999
+  FROM evernote_notes
+  WHERE cloud_note_identifier = $1
+  LIMIT 1
 `;
 
-const updateCitationSql = `
+const updateNoteSql = `
   UPDATE notes 
   SET cached_url = $2,
     cached_blurb_html = $3,
@@ -36,44 +35,13 @@ const updateCitationSql = `
   WHERE id = $1
 `;
 
-const formatCitation = (note: Note): UpdateCitationValues => {
-  let text = flow(sanitise, thirty, dequote)(note.body);
-  let { citationText, attribution } = splitCitation(text);
-
-  const blurbText = flow(truncate)(citationText);
-  const blurbAttribution = flow(byline, delink)(attribution);
-  const bodyText = parse(citationText);
-  const bodyAttribution = flow(delink, byline, link)(attribution);
-
-  const path = `/citations/${note.id}`;
-  const blurb = tidyHtml(`
-    <figure class="citation">
-      <blockquote>${blurbText}</blockquote>
-      <figcaption>${blurbAttribution}</figcaption>
-    </figure>
-  `);
-  const body = tidyHtml(`
-    <figure class="citation">
-      <blockquote>${bodyText}</blockquote>
-      <figcaption>${bodyAttribution}</figcaption>
-    </figure>
-  `);
-
-  return {
-    id: note.id,
-    path: path,
-    blurb: blurb.trim(),
-    body: body.trim(),
-  };
-};
-
-const fetchCitations = async () => {
-  const results = await client.query(selectCitationsSql);
+const checkEvernoteNote = async () => {
+  const results = await client.query(selectEvernoteNoteSql);
   return results.rows;
 };
 
-const updateCitation = async (values: UpdateCitationValues) => {
-  const result = await client.query(updateCitationSql, [
+const updateNote = async (values: UpdateCitationValues) => {
+  const result = await client.query(updateNoteSql, [
     values.id,
     values.path,
     values.blurb,
@@ -82,23 +50,20 @@ const updateCitation = async (values: UpdateCitationValues) => {
   return result;
 };
 
-const updateAllCitations = async () => {
-  try {
-    const citations = await fetchCitations();
-    await Promise.all(
-      citations.map(async (citation: Note) => {
-        const formattedCitation = formatCitation(citation);
-        const result = await updateCitation(formattedCitation);
-        return result.rowCount;
-      })
-    );
-    console.log(chalk.bold.green(`Updated ${citations.length} citations!`));
-  } catch (error) {
-    console.log(chalk.bold.red(`Updating citations faied: ${error}`));
-  }
-
-  client.end();
-  process.exit();
+const createNote = async (values: UpdateCitationValues) => {
+  const result = await client.query(updateNoteSql, [
+    values.id,
+    values.path,
+    values.blurb,
+    values.body,
+  ]);
+  return result;
 };
 
-module.exports = { formatCitation, updateAllCitations };
+const updateOrCreateNote = () => {
+  checkEvernoteNote();
+  updateNote(NoteValues);
+  createNote(NoteValues);
+}
+
+module.exports = { updateOrCreateNote };
