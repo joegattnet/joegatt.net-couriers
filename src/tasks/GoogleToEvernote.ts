@@ -151,7 +151,7 @@ const chapters = [
 
   var Evernote = require('evernote');
 
-  function updateEvernoteNote(noteStore, guid: string, noteBody: string, noteTitle?: string, parentNotebook?) {
+  function updateEvernoteNote(noteStore: EvernoteNoteStore, guid: string, noteBody: string, noteTitle?: string, parentNotebook?: string) {
     var nBody = '<?xml version="1.0" encoding="UTF-8"?>';
     nBody += '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">';
     nBody += "<en-note>" + noteBody + "</en-note>";

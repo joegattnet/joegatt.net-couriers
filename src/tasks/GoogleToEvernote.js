@@ -5,6 +5,7 @@ const readline = require('readline');
 const {google} = require('googleapis');
 const path = require('path');
 const parameterize = require('parameterize');
+const md5 = require('md5');
 
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
@@ -205,16 +206,25 @@ const chapters = [
     documentId: text.googleDocumentId,
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
-    console.log(`The title of the document is: ${res.data.title}`);
+    const documentTitle = res.data.title;
     const bodyText = formatBody(res.data);
 
-    const fileName = `${parameterize(res.data.title)}|${text.evernoteId}|${Date.now()}.txt`;
+    const contentHash = md5(`${documentTitle}${bodyText}`)
+    const fileName = `${parameterize(res.data.title)}|${text.evernoteId}|${Date.now()}|${contentHash}.txt`;
     const filePath = path.resolve(__dirname, `../../content/${fileName}`);  
-    fs.writeFile(filePath, bodyText, (err) => {
-      if (err) return console.error(err);
-      console.log(`Content stored to ${fileName}`);
-    });
 
-    updateEvernoteNote(noteStore, text.evernoteId, res.data.title, bodyText);
+    fs.readdir(path.resolve(__dirname, `../../content`), (err, items) => {
+      if (err) return console.error(err);
+      const latestSavedFileName = items[items.length - 1];
+      const latestSavedHash = latestSavedFileName.split(/\||\./)[3];
+      if (contentHash === latestSavedHash) return console.log('Content has not changed. Not saving!');
+
+      fs.writeFile(filePath, bodyText, (err) => {
+        if (err) return console.error(err);
+        console.log(`Content stored to ${fileName}`);
+      });
+      updateEvernoteNote(noteStore, text.evernoteId, res.data.title, bodyText);  
+
+    });
   });
 }

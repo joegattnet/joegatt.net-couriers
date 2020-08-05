@@ -27,6 +27,7 @@
     "hyphenated-fr": "^1.2.0",
     "languagedetect": "^2.0.0",
     "lodash": "^4.17.19",
+    "md5": "^2.3.0",
     "parameterize": "^1.0.0",
     "pg": "^8.2.1",
     "pretty": "^2.0.0",

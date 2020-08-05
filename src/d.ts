@@ -17,7 +17,7 @@ interface EvernoteNote {
   guid: string,
   title: string,
   content: string,
-  contentHash: <Buffer>,
+  contentHash: string,
   contentLength: number,
   created: number,
   updated: number,
